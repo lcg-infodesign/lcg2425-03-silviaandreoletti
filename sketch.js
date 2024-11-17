@@ -93,45 +93,47 @@ function extractContinentsData() {
   let riverLengths = data.getColumn("length");
   let riverAreas = data.getColumn("area");
 
-  let continents = {}; // Dati organizzati per continente
+  let continents = []; // Array per contenere i dati sui continenti
 
   // Estrae dati per ogni fiume 
   for (let i = 0; i < data.getRowCount(); i++) {
-    let continent = continentNames[i];
-    let riverName = riverNames[i];
+    let continent = continentNames[i]; // Nome del continente
+    let riverName = riverNames[i]; // Nome del fiume
     let riverLength = parseFloat(riverLengths[i]) || 0; // Converte lunghezza fiume in numero, default 0
     let riverArea = parseFloat(riverAreas[i]) || 0; // Converte area fiume in numero, default 0
 
-    if (continent === "Australia") continent = "Oceania"; // Siccome Australia è un paese, lo inserisco nel continetnte Oceania
+    if (continent === "Australia") continent = "Oceania"; // Siccome Australia è un paese, lo inserisco nel continente Oceania
 
-    if (!continents[continent]) continents[continent] = {}; // Crea un array vuoto per il continente se non esiste
+    // Trova il continente nell'array, se non esiste lo crea
+    let continentData = continents.find(c => c.name === continent);
+    if (!continentData) {
+      continentData = { name: continent, rivers: [] };
+      continents.push(continentData); // Aggiunge il continente
+    }
 
     let splitNames = riverName.split("–").map(name => name.trim()).slice(0, 2); // Gestisce fiumi con più nomi (split se necessario)
+    
     // Aggiunge fiume all'array del continente se il fiume non è già presente con lo stesso nome
     splitNames.forEach(name => {
-      let sameLengthCount = Object.values(continents[continent]).filter(
-        river => river.length === riverLength && river.name !== name
-      ).length;
-
-      if (sameLengthCount < 2 && !continents[continent][name]) {
-        continents[continent][name] = {
-          name: name,
-          length: riverLength,
-          area: riverArea
-        };
+      let riverExists = continentData.rivers.some(river => river.name === name && river.length === riverLength);
+      if (!riverExists) {
+        continentData.rivers.push({
+          name: name, // Nome del fiume
+          length: riverLength, // Lunghezza del fiume
+          area: riverArea // Area del fiume
+        });
       }
     });
   }
 
   // Organizza i dati finali per ciascun continente
-  for (let continent in continents) {
-    let riversArray = Object.values(continents[continent]); 
-    riversArray.sort((a, b) => b.length - a.length); // Ordina fiumi per lunghezza decrescente
+  continents.forEach(continentData => {
+    continentData.rivers.sort((a, b) => b.length - a.length); // Ordina fiumi per lunghezza decrescente -> fiumi più lunghi messi prima nell'array
     continentsData.push({
-      continent: continent,
-      rivers: riversArray.slice(0, 15) // Prende solo primi 15 fiumi più lunghi
+      continent: continentData.name, // Aggiunge il nome del continente
+      rivers: continentData.rivers.slice(0, 15) // Prende solo primi 15 fiumi più lunghi
     });
-  }
+  });
 }
 
 // Disegna cerchi per ogni continente
@@ -145,13 +147,13 @@ function drawCircles() {
   let totalHeight = rowSpacing * rows - padding; // Altezza totale
   let offsetY = (height - totalHeight) / 2; // Centra i cerchi verticalmente
 
-  // Disegna ogni cerchio per ogni continente
+  // Disegna ogni cerchio per ogni continente, calcolate sue coordinate x e y sul canvas
   let xPos, yPos;
   for (let i = 0; i < continentsData.length; i++) {
     xPos = offsetX + (i % cols) * (circleSize + padding) + circleSize / 2;
     yPos = offsetY + floor(i / cols) * rowSpacing + circleSize / 2;
 
-    let continent = continentsData[i];
+    let continent = continentsData[i]; // Ottieni continente
     drawGlyph(xPos, yPos, circleSize, continent); // Disegna il glifo per il continente
   }
 }
@@ -174,13 +176,13 @@ function drawGlyph(x, y, size, continentData) {
   let numRivers = continentData.rivers.length;
   let angleStep = TWO_PI / numRivers; // Calcola l'angolo tra i fiumi (spaziati uniformemente attorno al cerchio)
   let maxLineLength = size / 2 - 20; // Lunghezza massima delle linee 
-  let maxCombinedMetric = max(continentData.rivers.map(r => 0.85 * r.length + 0.15 * r.area));
+  let maxCombined = max(continentData.rivers.map(r => 0.85 * r.length + 0.15 * r.area));
 
   for (let j = 0; j < numRivers; j++) {
     if (j <= currentLinePhase || animationComplete) {  // Disegna solo fino alla linea della fase corrente
       let river = continentData.rivers[j]; 
       let combinedMetric = 0.85 * river.length + 0.15 * river.area; // Calcola il valore combinato per ogni fiume
-      let lineLength = map(combinedMetric, 0, maxCombinedMetric, 10, maxLineLength); // Mappa la lunghezza della linea
+      let lineLength = map(combinedMetric, 0, maxCombined, 10, maxLineLength); // Mappa la lunghezza della linea
 
       let progress = j === currentLinePhase && !animationComplete ? currentLineProgress : 1; // Se è la fase corrente, mostra il progresso
       let angle = j * angleStep; // Calcola angolo per ogni fiume
