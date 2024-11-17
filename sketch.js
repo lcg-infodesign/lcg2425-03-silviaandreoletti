@@ -9,25 +9,23 @@ let lineColor = "#00ffff";
 let textColor = "#D6EAF8"; 
 let nameColor = "#D6EAF8";
 
-let baseCircleSize = 300;
+let baseCircleSize = 300; 
 let basePadding = 100;
-let circleSize, padding;
+let circleSize, padding; // VAriabili che cambiano in base a dimensione finestra
 
 // Aanimazione
 let currentLinePhase = 0; // Fase attuale animazione, indica quale linea stiamo disegnando
 let currentLineProgress = 0; // Progresso linea corrente (0 a 1)
 let animationSpeed = 0.03; // Velocità 
-let animationComplete = false; // Stato dell'animazione
+let animationComplete = false; // Stato dell'animazione, se completata
 
 function preload() {
   data = loadTable("assets/rivers-data.csv", "csv", "header");
 }
 
 function setup() {
-  // Eseguito una volta all'inizio
   if (continentsData.length === 0) {
-    // Se non ancora estratto dato per continenti, si fa ora
-    extractContinentsData();
+    extractContinentsData(); // Estraggo dati da fiumi e li organizzo per continenti
   }
   
   // Aggiorna layout in base dimensione finestra
@@ -37,19 +35,18 @@ function setup() {
 }
 
 function draw() {
-  drawCircles(); // Cerchi dei continenti
+  drawCircles(); // Cerchi continenti
   
   // Gestisce animazione linee
   if (!animationComplete) {
-    // Incrementa progresso linea
-    currentLineProgress += animationSpeed;
+    currentLineProgress += animationSpeed; // Incrementa progresso linea
     if (currentLineProgress >= 1) { 
       // Se progresso ragiunge 1 (linea completa), passa alla fase successiva 
-      currentLineProgress = 0;
+      currentLineProgress = 0; // Resetta progresso per prossima linea
       currentLinePhase++;  // Passa alla seconda, terza linea...)
 
       // Se tutte le linee sono state disegnate allora fermo l'animazione
-      if (currentLinePhase >= 90) {  // Limita numero di linee per ogni continente 
+      if (currentLinePhase >= 90) {  // Numero linee per ogni continente 
         animationComplete = true; 
         noLoop(); 
       }
@@ -79,9 +76,9 @@ function updateLayout() {
 
 // Calcola altezza canvas in base a numero di righe di cerchi
 function getCanvasHeight() {
-  let cols = getCols(); // Ottengo numero colonne che dipende da larghezza finestra
+  let cols = getCols(); // Ottengo numero colonne che dipende da finestra
   let rows = ceil(continentsData.length / cols); // Calcolo numero righe
-  return max(windowHeight, rows * (circleSize + padding)); // Altezza finale deve ospitare tutti cerchi
+  return max(windowHeight, rows * (circleSize + padding)); // Altezza sufficiente per contenere cerchi
 }
 
 // Determina numero colonne di cerchi in base alla larghezza finestra 
@@ -96,7 +93,7 @@ function extractContinentsData() {
   let riverLengths = data.getColumn("length");
   let riverAreas = data.getColumn("area");
 
-  let continents = {}; // Oggetto per memorizzare dati per ciascun continente
+  let continents = {}; // Dati organizzati per continente
 
   // Estrae dati per ogni fiume 
   for (let i = 0; i < data.getRowCount(); i++) {
@@ -217,7 +214,7 @@ function drawGlyph(x, y, size, continentData) {
   }
 }
 
-// Funzione che viene eseguita quando la finestra viene ridimensionata
+// Funzione eseguita quando finestra viene ridimensionata
 function windowResized() {
   updateLayout(); // Aggiorna layout
   resizeCanvas(windowWidth, getCanvasHeight()); // Ridimensiona canvas
