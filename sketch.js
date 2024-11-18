@@ -95,8 +95,8 @@ function extractContinentsData() {
 
   let continents = []; // Array per contenere i dati sui continenti
 
-  // Estrae dati per ogni fiume 
-  for (let i = 0; i < data.getRowCount(); i++) {
+  // Iterare su ogni riga dataset per ottenere dati di ogni fiume
+  for (let i = 0; i < data.getRowCount(); i++) { 
     let continent = continentNames[i]; // Nome del continente
     let riverName = riverNames[i]; // Nome del fiume
     let riverLength = parseFloat(riverLengths[i]) || 0; // Converte lunghezza fiume in numero, default 0
