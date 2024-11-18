@@ -9,23 +9,25 @@ let lineColor = "#00ffff";
 let textColor = "#D6EAF8"; 
 let nameColor = "#D6EAF8";
 
-let baseCircleSize = 300; 
+let baseCircleSize = 250;
 let basePadding = 100;
-let circleSize, padding; // VAriabili che cambiano in base a dimensione finestra
+let circleSize, padding;
 
-// Aanimazione
+// Animazione
 let currentLinePhase = 0; // Fase attuale animazione, indica quale linea stiamo disegnando
 let currentLineProgress = 0; // Progresso linea corrente (0 a 1)
-let animationSpeed = 0.04; // Velocità 
-let animationComplete = false; // Stato dell'animazione, se completata
+let animationSpeed = 0.08; // Velocità 
+let animationComplete = false; // Stato dell'animazione
 
 function preload() {
   data = loadTable("assets/rivers-data.csv", "csv", "header");
 }
 
 function setup() {
+  // Eseguito una volta all'inizio
   if (continentsData.length === 0) {
-    extractContinentsData(); // Estraggo dati da fiumi e li organizzo per continenti
+    // Se non ancora estratto dato per continenti, si fa ora
+    extractContinentsData();
   }
   
   // Aggiorna layout in base dimensione finestra
@@ -35,25 +37,26 @@ function setup() {
 }
 
 function draw() {
-  drawCircles(); // Cerchi continenti
+  drawCircles(); // Cerchi dei continenti
   
   // Gestisce animazione linee
   if (!animationComplete) {
-    currentLineProgress += animationSpeed; // Incrementa progresso linea
+    // Incrementa progresso linea
+    currentLineProgress += animationSpeed;
     if (currentLineProgress >= 1) { 
       // Se progresso ragiunge 1 (linea completa), passa alla fase successiva 
-      currentLineProgress = 0; // Resetta progresso per prossima linea
+      currentLineProgress = 0;
       currentLinePhase++;  // Passa alla seconda, terza linea...)
 
       // Se tutte le linee sono state disegnate allora fermo l'animazione
-      if (currentLinePhase >= 90) {  // Numero linee per ogni continente 
+      if (currentLinePhase >= continentsData.reduce((acc, continent) => acc + continent.rivers.length, 0)) {  // Numero totale di linee
         animationComplete = true; 
         noLoop(); 
       }
     }
   }
   
-  // Se l'animazione è completata, forza il disegno finale dei nomi dei fiumi
+  // Se l'animazione è completata, forza il disegno finale dei fiumi
   if (animationComplete) {
     currentLineProgress = 1; // Imposta progresso linea a 1 (linea completa)
     drawCircles(); // Ridisegna cerchi con fiumi finalizzati
@@ -76,9 +79,9 @@ function updateLayout() {
 
 // Calcola altezza canvas in base a numero di righe di cerchi
 function getCanvasHeight() {
-  let cols = getCols(); // Ottengo numero colonne che dipende da finestra
+  let cols = getCols(); // Ottengo numero colonne che dipende da larghezza finestra
   let rows = ceil(continentsData.length / cols); // Calcolo numero righe
-  return max(windowHeight, rows * (circleSize + padding)); // Altezza sufficiente per contenere cerchi
+  return max(windowHeight, rows * (circleSize + padding)); // Altezza finale deve ospitare tutti cerchi
 }
 
 // Determina numero colonne di cerchi in base alla larghezza finestra 
@@ -93,47 +96,40 @@ function extractContinentsData() {
   let riverLengths = data.getColumn("length");
   let riverAreas = data.getColumn("area");
 
-  let continents = []; // Array per contenere i dati sui continenti
+  let continents = {}; // Oggetto per memorizzare dati per ciascun continente
 
-  // Iterare su ogni riga dataset per ottenere dati di ogni fiume
-  for (let i = 0; i < data.getRowCount(); i++) { 
-    let continent = continentNames[i]; // Nome del continente
-    let riverName = riverNames[i]; // Nome del fiume
+  // Estrae dati per ogni fiume 
+  for (let i = 0; i < data.getRowCount(); i++) {
+    let continent = continentNames[i];
+    let riverName = riverNames[i];
     let riverLength = parseFloat(riverLengths[i]) || 0; // Converte lunghezza fiume in numero, default 0
     let riverArea = parseFloat(riverAreas[i]) || 0; // Converte area fiume in numero, default 0
 
-    if (continent === "Australia") continent = "Oceania"; // Siccome Australia è un paese, lo inserisco nel continente Oceania
+    if (continent === "Australia") continent = "Oceania"; // Siccome Australia è un paese, lo inserisco nel continetnte Oceania
 
-    // Trova il continente nell'array, se non esiste lo crea
-    let continentData = continents.find(c => c.name === continent);
-    if (!continentData) {
-      continentData = { name: continent, rivers: [] };
-      continents.push(continentData); // Aggiunge il continente
-    }
+    if (!continents[continent]) continents[continent] = {}; // Crea un array vuoto per il continente se non esiste
 
-    let splitNames = riverName.split("–").map(name => name.trim()).slice(0, 2); // Gestisce fiumi con più nomi (split se necessario)
-    
-    // Aggiunge fiume all'array del continente se il fiume non è già presente con lo stesso nome
+    let splitNames = riverName.split("–").map(name => name.trim()); // Gestisce fiumi con più nomi (split se necessario)
+    // Aggiunge ogni parte del nome come fiume separato, senza ripetizioni
     splitNames.forEach(name => {
-      let riverExists = continentData.rivers.some(river => river.name === name && river.length === riverLength);
-      if (!riverExists) {
-        continentData.rivers.push({
-          name: name, // Nome del fiume
-          length: riverLength, // Lunghezza del fiume
-          area: riverArea // Area del fiume
-        });
+      if (!continents[continent][name]) {
+        continents[continent][name] = {
+          name: name,
+          length: riverLength,
+          area: riverArea
+        };
       }
     });
   }
 
-  // Organizza i dati finali per ciascun continente
-  continents.forEach(continentData => {
-    continentData.rivers.sort((a, b) => b.length - a.length); // Ordina fiumi per lunghezza decrescente -> fiumi più lunghi messi prima nell'array
+  // Scorre attraverso tutte le chiavi dell'oggetto continets (nomi)
+  for (let continent in continents) {
+    let riversArray = Object.values(continents[continent]); // Estrae tutti i valori (fiumi) associati alla chiave corrente e li restituisce come un array
     continentsData.push({
-      continent: continentData.name, // Aggiunge il nome del continente
-      rivers: continentData.rivers.slice(0, 15) // Prende solo primi 15 fiumi più lunghi
+      continent: continent, // Aggiunge nome continente
+      rivers: riversArray // Aggiunge l'array dei fiumi per quel continente
     });
-  });
+  }
 }
 
 // Disegna cerchi per ogni continente
@@ -147,13 +143,13 @@ function drawCircles() {
   let totalHeight = rowSpacing * rows - padding; // Altezza totale
   let offsetY = (height - totalHeight) / 2; // Centra i cerchi verticalmente
 
-  // Disegna ogni cerchio per ogni continente, calcolate sue coordinate x e y sul canvas
+  // Disegna ogni cerchio per ogni continente
   let xPos, yPos;
   for (let i = 0; i < continentsData.length; i++) {
     xPos = offsetX + (i % cols) * (circleSize + padding) + circleSize / 2;
     yPos = offsetY + floor(i / cols) * rowSpacing + circleSize / 2;
 
-    let continent = continentsData[i]; // Ottieni continente
+    let continent = continentsData[i];
     drawGlyph(xPos, yPos, circleSize, continent); // Disegna il glifo per il continente
   }
 }
@@ -166,7 +162,7 @@ function drawGlyph(x, y, size, continentData) {
 
   fill(textColor);
   textAlign(CENTER, CENTER);
-  textSize(13);
+  textSize(12);
   text(continentData.continent, x, y - size / 2 - 18); // Nome continente sopra cerchio
 
   // Disegno punto centrale
@@ -176,13 +172,13 @@ function drawGlyph(x, y, size, continentData) {
   let numRivers = continentData.rivers.length;
   let angleStep = TWO_PI / numRivers; // Calcola l'angolo tra i fiumi (spaziati uniformemente attorno al cerchio)
   let maxLineLength = size / 2 - 20; // Lunghezza massima delle linee 
-  let maxCombined = max(continentData.rivers.map(r => 0.85 * r.length + 0.15 * r.area));
+  let maxCombinedMetric = max(continentData.rivers.map(r => 0.85 * r.length + 0.15 * r.area));
 
   for (let j = 0; j < numRivers; j++) {
     if (j <= currentLinePhase || animationComplete) {  // Disegna solo fino alla linea della fase corrente
       let river = continentData.rivers[j]; 
       let combinedMetric = 0.85 * river.length + 0.15 * river.area; // Calcola il valore combinato per ogni fiume
-      let lineLength = map(combinedMetric, 0, maxCombined, 10, maxLineLength); // Mappa la lunghezza della linea
+      let lineLength = map(combinedMetric, 0, maxCombinedMetric, 10, maxLineLength); // Mappa la lunghezza della linea
 
       let progress = j === currentLinePhase && !animationComplete ? currentLineProgress : 1; // Se è la fase corrente, mostra il progresso
       let angle = j * angleStep; // Calcola angolo per ogni fiume
@@ -190,33 +186,13 @@ function drawGlyph(x, y, size, continentData) {
       let y2 = y + sin(angle) * lineLength * progress; // Coordinate finali della linea (y)
 
       stroke(lineColor);
-      strokeWeight(1.5);
+      strokeWeight(0.8);
       line(x, y, x2, y2); // Disegna la linea
-
-      if (progress === 1) { // Se la linea è completa, disegna il nome del fiume
-        let labelDistance = lineLength + 5 + river.name.length * 2; // Calcola la distanza per il testo
-        let labelX = x + cos(angle) * labelDistance;
-        let labelY = y + sin(angle) * labelDistance;
-
-        push();
-        translate(labelX, labelY);
-        if (angle > HALF_PI && angle < (3 * HALF_PI)) {
-          rotate(angle + PI); // Ruota testo se necessario per visibilità
-        } else {
-          rotate(angle);
-        }
-        noStroke();
-        fill(nameColor);
-        textSize(8);
-        textAlign(CENTER, CENTER);
-        text(river.name, 0, 0); // Disegna nome del fiume
-        pop();
-      }
     }
   }
 }
 
-// Funzione eseguita quando finestra viene ridimensionata
+// Funzione che viene eseguita quando la finestra viene ridimensionata
 function windowResized() {
   updateLayout(); // Aggiorna layout
   resizeCanvas(windowWidth, getCanvasHeight()); // Ridimensiona canvas
