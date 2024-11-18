@@ -16,7 +16,7 @@ let circleSize, padding; // VAriabili che cambiano in base a dimensione finestra
 // Aanimazione
 let currentLinePhase = 0; // Fase attuale animazione, indica quale linea stiamo disegnando
 let currentLineProgress = 0; // Progresso linea corrente (0 a 1)
-let animationSpeed = 0.03; // Velocità 
+let animationSpeed = 0.04; // Velocità 
 let animationComplete = false; // Stato dell'animazione, se completata
 
 function preload() {
