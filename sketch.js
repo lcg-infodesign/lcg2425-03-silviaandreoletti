@@ -2,7 +2,7 @@ let data; // Memorizza contenuto dataset
 let continentsData = []; // Array che contiene dati sui continenti e loro fiumi
 
 // Colori e dimensioni iniziali
-let pageColor = "#0073e6"; 
+let pageColor = "#33adff"; 
 let circleColor = "blue"; 
 let centerDotColor = "#00ffff";
 let lineColor = "#00ffff";
